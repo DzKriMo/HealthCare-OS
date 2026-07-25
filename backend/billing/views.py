@@ -2,10 +2,15 @@
 Billing views — items, quotes, invoices, payments, POS, revenue dashboard.
 """
 import decimal
+import json
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import generics, status, views
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound, ValidationError
 from drf_spectacular.utils import extend_schema
 
@@ -449,3 +454,48 @@ class InsuranceClaimDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         return InsuranceClaim.objects.for_tenant(self.request.tenant)
+
+
+@extend_schema(tags=["billing"])
+class CheckoutSessionView(generics.GenericAPIView):
+    permission_classes = [HasTenantAccess, TenantPermissionRequired]
+    serializer_class = serializers.CheckoutSessionSerializer
+
+    def get_required_permission(self):
+        return "billing.create_payment"
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            invoice = Invoice.objects.for_tenant(request.tenant).get(
+                id=serializer.validated_data["invoice_id"],
+            )
+        except Invoice.DoesNotExist:
+            raise NotFound("Invoice not found.")
+        if invoice.balance_due <= 0:
+            return Response({"error": "Invoice is already paid"}, status=400)
+        from .gateway import PaymentGatewayService
+        service = PaymentGatewayService(request.tenant)
+        result = service.create_checkout_session(
+            invoice,
+            serializer.validated_data["success_url"],
+            serializer.validated_data["cancel_url"],
+            serializer.validated_data.get("gateway", "stripe"),
+        )
+        if "error" in result:
+            return Response(result, status=400)
+        return Response(result)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class StripeWebhookView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        from .gateway import PaymentGatewayService
+        payload = request.body
+        sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+        result = PaymentGatewayService(None).handle_webhook(payload, sig_header, "stripe")
+        return JsonResponse(result)

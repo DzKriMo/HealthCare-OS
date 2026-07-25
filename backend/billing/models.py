@@ -268,16 +268,23 @@ class Payment(models.Model):
     """
     A payment applied to one or more invoices.
 
-    Supports: cash, card, transfer, insurance, and refunds.
+    Supports: cash, card, online, transfer, insurance, and refunds.
     Refunds are tracked as negative-amount payments linked to the original.
+    Online payments are processed via Stripe/PayPal gateway.
     """
 
     class Method(models.TextChoices):
         CASH = "cash", "Cash"
         CARD = "card", "Card"
+        ONLINE = "online", "Online Payment"
         TRANSFER = "transfer", "Bank Transfer"
         INSURANCE = "insurance", "Insurance"
         OTHER = "other", "Other"
+
+    class Gateway(models.TextChoices):
+        NONE = "", "None"
+        STRIPE = "stripe", "Stripe"
+        PAYPAL = "paypal", "PayPal"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="payments")
@@ -285,6 +292,8 @@ class Payment(models.Model):
 
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     method = models.CharField(max_length=20, choices=Method.choices)
+    gateway = models.CharField(max_length=20, choices=Gateway.choices, default=Gateway.NONE)
+    gateway_payment_id = models.CharField(max_length=200, blank=True, help_text="Stripe PaymentIntent ID or PayPal order ID")
     reference = models.CharField(max_length=100, blank=True, help_text="Transaction ID, check number, etc.")
 
     payment_date = models.DateTimeField(default=timezone.now)

@@ -211,6 +211,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = [
             "id", "patient", "patient_name", "amount", "method",
+            "gateway", "gateway_payment_id",
             "reference", "payment_date", "allocations",
             "is_refund", "original_payment", "refund_reason",
             "recorded_by", "recorded_by_name", "created_at",
@@ -224,7 +225,8 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            "patient", "amount", "method", "reference",
+            "patient", "amount", "method", "gateway",
+            "gateway_payment_id", "reference",
             "payment_date", "allocations",
         ]
 
@@ -236,6 +238,13 @@ class PaymentCreateSerializer(serializers.ModelSerializer):
             recorded_by=user,
             **validated_data,
         )
+
+
+class CheckoutSessionSerializer(serializers.Serializer):
+    invoice_id = serializers.UUIDField(required=True)
+    gateway = serializers.ChoiceField(choices=["stripe", "paypal"], default="stripe")
+    success_url = serializers.URLField(required=True)
+    cancel_url = serializers.URLField(required=True)
 
 
 class RefundCreateSerializer(serializers.Serializer):

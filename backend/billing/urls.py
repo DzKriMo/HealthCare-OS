@@ -32,4 +32,8 @@ urlpatterns = [
     # Insurance claims
     path("claims/", views.InsuranceClaimListView.as_view(), name="claim-list"),
     path("claims/<uuid:pk>/", views.InsuranceClaimDetailView.as_view(), name="claim-detail"),
+
+    # Online payments
+    path("checkout/", views.CheckoutSessionView.as_view(), name="checkout"),
+    path("stripe-webhook/", views.StripeWebhookView.as_view(), name="stripe-webhook"),
 ]

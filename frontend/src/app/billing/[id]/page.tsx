@@ -109,6 +109,11 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
               <div className="flex gap-2">
+                {invoice.balance_due > 0 && (
+                  <Button variant="outline" onClick={() => router.push(`/billing/checkout?invoice_id=${invoice.id}`)}>
+                    <Icons.creditCard className="mr-2 h-4 w-4" /> Pay Online
+                  </Button>
+                )}
                 {canEdit && <Button variant="outline" onClick={() => router.push(`/billing/${invoice.id}/edit`)}><Icons.settings className="mr-2 h-4 w-4" /> Edit</Button>}
                 <Button variant="outline" onClick={() => window.print()}><Icons.fileText className="mr-2 h-4 w-4" /> PDF</Button>
               </div>

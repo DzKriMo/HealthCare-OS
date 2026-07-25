@@ -42,6 +42,10 @@ openai>=1.50,<1.51
 # WhatsApp & Voice
 twilio>=9.4,<9.5
 
+# Online Payments
+stripe>=11.0,<11.1
+paypalrestsdk>=1.13,<1.14
+
 # Utilities
 python-dateutil>=2.9,<2.10
 pillow>=10.4,<10.5
