@@ -218,6 +218,17 @@ function close() {
   }
 }
 
+function restore(fileBuffer) {
+  if (db) db.close();
+  db = new SQL.Database(fileBuffer);
+  scheduleSave();
+}
+
+function exportDb() {
+  if (!db) return Buffer.alloc(0);
+  return Buffer.from(db.export());
+}
+
 module.exports = {
   LOCAL_SCHEMA,
   initLocalDatabase,
@@ -227,5 +238,7 @@ module.exports = {
   getPendingMutations,
   resolveMutation,
   pendingCount,
+  restore,
+  export: exportDb,
   close,
 };
