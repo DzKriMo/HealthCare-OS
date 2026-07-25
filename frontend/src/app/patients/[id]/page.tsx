@@ -16,6 +16,12 @@ import { InsuranceList } from "@/components/patients/insurance-list";
 import { EmergencyContactsList } from "@/components/patients/emergency-contacts-list";
 import { ConsentManager } from "@/components/patients/consent-manager";
 import { PatientBillingHistory } from "@/components/billing/patient-billing-history";
+import { PatientEncounters } from "@/components/clinical/patient-encounters";
+import { PatientPrescriptions } from "@/components/pharmacy/patient-prescriptions";
+import { VitalsDisplay } from "@/components/clinical/vitals-display";
+import { VitalsForm } from "@/components/clinical/vitals-form";
+import { DiagnosisList } from "@/components/clinical/diagnosis-list";
+import { VaccinationList } from "@/components/clinical/vaccination-list";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
 
 interface PatientFull {
@@ -127,6 +133,11 @@ export default function PatientDetailPage() {
                 <TabsTrigger value="insurance">Insurance</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts</TabsTrigger>
                 <TabsTrigger value="consents">Consents</TabsTrigger>
+                <TabsTrigger value="encounters">Encounters</TabsTrigger>
+                <TabsTrigger value="vitals">Vitals</TabsTrigger>
+                <TabsTrigger value="diagnoses">Diagnoses</TabsTrigger>
+                <TabsTrigger value="vaccinations">Vaccinations</TabsTrigger>
+                <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
                 <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
@@ -213,6 +224,28 @@ export default function PatientDetailPage() {
                 <ConsentManager patientId={patient.id} />
               </TabsContent>
 
+              <TabsContent value="encounters">
+                <PatientEncounters patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="vitals">
+                <div className="space-y-4">
+                  <VitalsTab patientId={patient.id} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="diagnoses">
+                <DiagnosisList patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="vaccinations">
+                <VaccinationList patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="prescriptions">
+                <PatientPrescriptions patientId={patient.id} />
+              </TabsContent>
+
               <TabsContent value="billing">
                 <PatientBillingHistory patientId={patient.id} />
               </TabsContent>
@@ -242,6 +275,45 @@ function SummaryBox({ label, value, active }: { label: string; value: string | n
     <div className={`rounded-lg border p-3 text-center ${active ? "bg-primary/5 border-primary/20" : ""}`}>
       <div className="text-2xl font-bold">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function VitalsTab({ patientId }: { patientId: string }) {
+  const [vitals, setVitals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await api.get<{ results: any[] }>(`/clinical/vitals/?patient=${patientId}`);
+      setVitals(data.results);
+    } catch { } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, [patientId]);
+
+  if (loading) return <Card><CardContent><div className="h-20 animate-pulse rounded-lg bg-muted" /></CardContent></Card>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Vitals</h3>
+        <Button size="sm" variant="outline" onClick={() => setShowForm(!showForm)}>
+          {showForm ? "Cancel" : "Record Vitals"}
+        </Button>
+      </div>
+      {showForm && (
+        <VitalsForm
+          onSubmit={async (data) => {
+            await api.post("/clinical/vitals/", { patient: patientId, ...data });
+            setShowForm(false);
+            await load();
+          }}
+        />
+      )}
+      <VitalsDisplay vitals={vitals} />
     </div>
   );
 }
