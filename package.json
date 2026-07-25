@@ -1,0 +1,32 @@
+{
+  "name": "healthcare-os",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Healthcare OS — Modular, offline-first, multi-tenant healthcare platform",
+  "workspaces": [
+    "packages/*",
+    "frontend",
+    "desktop"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:desktop": "npm run dev --workspace=desktop",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:types": "npm run build --workspace=packages/types",
+    "build:validators": "npm run build --workspace=packages/validators",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

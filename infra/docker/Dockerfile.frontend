@@ -1,0 +1,22 @@
+# ── Next.js Frontend ────────────────────────────────────────
+FROM node:20-alpine AS frontend
+
+WORKDIR /app
+
+# Copy workspace config
+COPY package.json package-lock.json* ./
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/validators/package.json ./packages/validators/package.json
+COPY frontend/package.json ./frontend/package.json
+
+RUN npm install
+
+COPY packages ./packages
+COPY frontend ./frontend
+
+WORKDIR /app/frontend
+
+EXPOSE 3000
+
+# Run dev from /app where workspace config lives
+CMD ["sh", "-c", "cd /app && npm run dev --workspace=frontend"]

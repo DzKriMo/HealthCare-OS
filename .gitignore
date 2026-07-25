@@ -1,0 +1,79 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.egg
+.pnpm-store/
+
+# Environment
+.env
+.env.*
+!.env.example
+*.local
+
+# Build output
+.next/
+dist/
+build/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python
+.venv/
+venv/
+env/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+htmlcov/
+
+# Django
+backend/staticfiles/
+backend/media/
+
+# Database
+*.sqlite3
+*.db
+dump.rdb
+
+# Electron
+desktop/out/
+desktop/dist/
+desktop/release/
+
+# Docker
+.docker/
+
+# Logs
+*.log
+logs/
+
+# Secrets
+*.pem
+*.key
+*.crt
+*.p12
+secrets.yaml
+credentials.json
+
+# Testing
+.coverage
+coverage/
+test-results/
+playwright-report/
