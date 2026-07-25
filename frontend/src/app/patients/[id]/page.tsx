@@ -15,6 +15,7 @@ import { AllergiesList } from "@/components/patients/allergies-list";
 import { InsuranceList } from "@/components/patients/insurance-list";
 import { EmergencyContactsList } from "@/components/patients/emergency-contacts-list";
 import { ConsentManager } from "@/components/patients/consent-manager";
+import { PatientBillingHistory } from "@/components/billing/patient-billing-history";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
 
 interface PatientFull {
@@ -126,6 +127,7 @@ export default function PatientDetailPage() {
                 <TabsTrigger value="insurance">Insurance</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts</TabsTrigger>
                 <TabsTrigger value="consents">Consents</TabsTrigger>
+                <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
 
@@ -209,6 +211,10 @@ export default function PatientDetailPage() {
 
               <TabsContent value="consents">
                 <ConsentManager patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="billing">
+                <PatientBillingHistory patientId={patient.id} />
               </TabsContent>
 
               <TabsContent value="timeline">
