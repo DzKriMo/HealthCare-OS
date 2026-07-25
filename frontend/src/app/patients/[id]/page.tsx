@@ -7,62 +7,64 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
+import { SkeletonCard, SkeletonTable } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MedicalHistoryEditor } from "@/components/patients/medical-history-editor";
+import { AllergiesList } from "@/components/patients/allergies-list";
+import { InsuranceList } from "@/components/patients/insurance-list";
+import { EmergencyContactsList } from "@/components/patients/emergency-contacts-list";
+import { ConsentManager } from "@/components/patients/consent-manager";
+import { PatientTimeline } from "@/components/patients/patient-timeline";
 
-interface PatientDetail {
-  id: string;
-  display_id: string;
-  full_name: string;
-  first_name: string;
-  last_name: string;
-  date_of_birth: string;
-  age: number;
-  gender: string;
-  blood_type: string;
-  phone_primary: string;
-  phone_secondary: string;
-  email: string;
-  address_line1: string;
-  city: string;
-  country: string;
+interface PatientFull {
+  id: string; display_id: string; full_name: string;
+  first_name: string; middle_name: string; last_name: string;
+  date_of_birth: string; age: number; gender: string;
+  blood_type: string; marital_status: string;
+  national_id_type: string;
+  phone_primary: string; phone_secondary: string; email: string;
+  address_line1: string; address_line2: string; city: string;
+  state: string; postal_code: string; country: string;
+  is_active: boolean; registration_date: string;
   allergies: { id: string; substance: string; severity: string }[];
-  insurance_policies: { id: string; provider: string; policy_number: string }[];
+  emergency_contacts: { id: string; name: string; relationship: string; phone_primary: string }[];
+  insurance_policies: { id: string; provider: string; policy_number: string; coverage_type: string }[];
+  active_medications: { id: string; drug_name: string; dosage: string; frequency: string }[];
+  has_active_consents: boolean;
+  created_at: string; updated_at: string;
 }
 
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
   const patientId = params.id as string;
-  const { user, isAuthenticated, isLoading, fetchCurrentUser, logout } =
-    useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading, fetchCurrentUser, logout } = useAuthStore();
 
-  const [patient, setPatient] = useState<PatientDetail | null>(null);
+  const [patient, setPatient] = useState<PatientFull | null>(null);
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("demographics");
 
   useEffect(() => { fetchCurrentUser(); }, [fetchCurrentUser]);
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.push("/login");
-  }, [isLoading, isAuthenticated, router]);
+    if (!authLoading && !isAuthenticated) router.push("/login");
+  }, [authLoading, isAuthenticated, router]);
   useEffect(() => {
     if (isAuthenticated && patientId) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, patientId]);
 
   const load = async () => {
-    setLoading(true);
-    setLoadError("");
+    setLoading(true); setLoadError("");
     try {
-      const data = await api.get<PatientDetail>(`/patients/${patientId}/`);
+      const data = await api.get<PatientFull>(`/patients/${patientId}/`);
       setPatient(data);
     } catch {
       setLoadError("Failed to load patient.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  if (isLoading || !user) {
+  if (authLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -72,9 +74,9 @@ export default function PatientDetailPage() {
 
   return (
     <DashboardShell user={user} onLogout={logout}>
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         <Button variant="ghost" size="sm" onClick={() => router.push("/patients")}>
-          ← Back to patients
+          <Icons.chevronDown className="mr-1 h-4 w-4 rotate-90" /> Back to patients
         </Button>
 
         {loadError && (
@@ -85,25 +87,28 @@ export default function PatientDetailPage() {
         )}
 
         {loading && !patient && (
-          <div className="space-y-3">
-            <div className="h-24 animate-pulse rounded-lg bg-muted" />
-            <div className="h-40 animate-pulse rounded-lg bg-muted" />
+          <div className="space-y-4">
+            <SkeletonCard />
+            <SkeletonTable rows={4} />
           </div>
         )}
 
         {patient && (
           <>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary">
                 {patient.first_name?.[0]}{patient.last_name?.[0]}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-[200px]">
                 <h1 className="text-2xl font-bold">{patient.full_name}</h1>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {patient.display_id} · {patient.age} yrs · {patient.gender}
-                  {patient.blood_type ? ` · ${patient.blood_type}` : ""}
+                  {patient.blood_type ? ` · ${patient.blood_type}` : ""} · {patient.city || "—"}
                 </p>
               </div>
+              <Button variant="outline" onClick={() => router.push(`/patients/${patient.id}/edit`)}>
+                <Icons.settings className="mr-2 h-4 w-4" /> Edit
+              </Button>
               <Button onClick={() => router.push(`/appointments/new?patient=${patient.id}`)}>
                 <Icons.calendar className="mr-2 h-4 w-4" /> Book appointment
               </Button>
@@ -112,31 +117,125 @@ export default function PatientDetailPage() {
               </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Card>
-                <CardHeader><CardTitle className="text-lg">Contact</CardTitle></CardHeader>
-                <CardContent className="space-y-1 text-sm">
-                  <div><span className="text-muted-foreground">Phone:</span> {patient.phone_primary || "—"}</div>
-                  <div><span className="text-muted-foreground">Email:</span> {patient.email || "—"}</div>
-                  <div><span className="text-muted-foreground">Address:</span> {patient.address_line1 || "—"}{patient.city ? `, ${patient.city}` : ""}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader><CardTitle className="text-lg">Allergies</CardTitle></CardHeader>
-                <CardContent className="text-sm">
-                  {patient.allergies?.length ? (
-                    <ul className="space-y-1">
-                      {patient.allergies.map((a) => (
-                        <li key={a.id}>{a.substance} <span className="text-muted-foreground">({a.severity})</span></li>
-                      ))}
-                    </ul>
-                  ) : <span className="text-muted-foreground">No known allergies</span>}
-                </CardContent>
-              </Card>
-            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <TabsList className="flex-wrap">
+                <TabsTrigger value="demographics">Demographics</TabsTrigger>
+                <TabsTrigger value="history">Medical History</TabsTrigger>
+                <TabsTrigger value="allergies">Allergies</TabsTrigger>
+                <TabsTrigger value="medications">Medications</TabsTrigger>
+                <TabsTrigger value="insurance">Insurance</TabsTrigger>
+                <TabsTrigger value="contacts">Contacts</TabsTrigger>
+                <TabsTrigger value="consents">Consents</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="demographics" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader><CardTitle className="text-lg">Personal Info</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <Row label="Full name" value={patient.full_name} />
+                      <Row label="Date of birth" value={`${patient.date_of_birth} (${patient.age} yrs)`} />
+                      <Row label="Gender" value={patient.gender} />
+                      <Row label="Blood type" value={patient.blood_type || "\u2014"} />
+                      <Row label="Marital status" value={patient.marital_status || "\u2014"} />
+                      <Row label="National ID type" value={patient.national_id_type || "\u2014"} />
+                      <Row label="Patient ID" value={patient.display_id} />
+                      <Row label="Registered" value={new Date(patient.registration_date).toLocaleDateString()} />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader><CardTitle className="text-lg">Contact</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <Row label="Phone" value={patient.phone_primary || "\u2014"} />
+                      <Row label="Alt. phone" value={patient.phone_secondary || "\u2014"} />
+                      <Row label="Email" value={patient.email || "\u2014"} />
+                      <Row label="Address" value={patient.address_line1 || "\u2014"} />
+                      {patient.address_line2 && <Row label="" value={patient.address_line2} />}
+                      <Row label="City" value={`${patient.city || ""}${patient.state ? `, ${patient.state}` : ""}`} />
+                      <Row label="Postal code" value={patient.postal_code || "\u2014"} />
+                      <Row label="Country" value={patient.country || "\u2014"} />
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card>
+                  <CardHeader><CardTitle className="text-lg">Quick Summary</CardTitle></CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <SummaryBox label="Allergies" value={patient.allergies.length} active={patient.allergies.length > 0} />
+                    <SummaryBox label="Medications" value={patient.active_medications.length} active={patient.active_medications.length > 0} />
+                    <SummaryBox label="Insurance" value={patient.insurance_policies.length} active={patient.insurance_policies.length > 0} />
+                    <SummaryBox label="Consents" value={patient.has_active_consents ? "Yes" : "No"} active={patient.has_active_consents} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="history">
+                <MedicalHistoryEditor patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="allergies">
+                <AllergiesList patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="medications">
+                <Card>
+                  <CardHeader><CardTitle>Current Medications</CardTitle></CardHeader>
+                  <CardContent>
+                    {patient.active_medications.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No active medications.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {patient.active_medications.map((m) => (
+                          <div key={m.id} className="rounded-lg border p-3">
+                            <div className="text-sm font-medium">{m.drug_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {m.dosage}{m.dosage && m.frequency ? " · " : ""}{m.frequency}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="insurance">
+                <InsuranceList patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="contacts">
+                <EmergencyContactsList patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="consents">
+                <ConsentManager patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="timeline">
+                <PatientTimeline patientId={patient.id} />
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </div>
     </DashboardShell>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-muted-foreground shrink-0">{label}:</span>
+      <span className="text-right">{value}</span>
+    </div>
+  );
+}
+
+function SummaryBox({ label, value, active }: { label: string; value: string | number; active: boolean }) {
+  return (
+    <div className={`rounded-lg border p-3 text-center ${active ? "bg-primary/5 border-primary/20" : ""}`}>
+      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
   );
 }
