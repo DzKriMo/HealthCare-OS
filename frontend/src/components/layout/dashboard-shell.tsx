@@ -29,6 +29,7 @@ const MAIN_NAV: NavItem[] = [
   { label: "Appointments", icon: "calendar", href: "/appointments" },
   { label: "Billing", icon: "creditCard", href: "/billing" },
   { label: "Documents", icon: "fileText", href: "/documents" },
+  { label: "FHIR® Compliance", icon: "activity", href: "/fhir" },
   { label: "Audit Logs", icon: "shield", href: "/audit" },
 ];
 

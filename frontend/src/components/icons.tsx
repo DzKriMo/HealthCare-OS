@@ -18,6 +18,12 @@ import {
   Search,
   Plus,
   MoreHorizontal,
+  Activity,
+  Download,
+  Pill,
+  AlertTriangle,
+  HeartPulse,
+  Syringe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +46,12 @@ const iconMap = {
   search: Search,
   plus: Plus,
   moreHorizontal: MoreHorizontal,
+  activity: Activity,
+  download: Download,
+  pill: Pill,
+  alertTriangle: AlertTriangle,
+  heartPulse: HeartPulse,
+  syringe: Syringe,
 };
 
 function Logo({ className }: { className?: string }) {
