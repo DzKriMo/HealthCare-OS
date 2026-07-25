@@ -18,6 +18,8 @@ import { ConsentManager } from "@/components/patients/consent-manager";
 import { PatientBillingHistory } from "@/components/billing/patient-billing-history";
 import { PatientEncounters } from "@/components/clinical/patient-encounters";
 import { PatientPrescriptions } from "@/components/pharmacy/patient-prescriptions";
+import { PatientLabOrders } from "@/components/laboratory/patient-lab-orders";
+import { PatientStudies } from "@/components/imaging/patient-studies";
 import { VitalsDisplay } from "@/components/clinical/vitals-display";
 import { VitalsForm } from "@/components/clinical/vitals-form";
 import { DiagnosisList } from "@/components/clinical/diagnosis-list";
@@ -138,6 +140,8 @@ export default function PatientDetailPage() {
                 <TabsTrigger value="diagnoses">Diagnoses</TabsTrigger>
                 <TabsTrigger value="vaccinations">Vaccinations</TabsTrigger>
                 <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+                <TabsTrigger value="lab">Lab</TabsTrigger>
+                <TabsTrigger value="imaging">Imaging</TabsTrigger>
                 <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
@@ -244,6 +248,14 @@ export default function PatientDetailPage() {
 
               <TabsContent value="prescriptions">
                 <PatientPrescriptions patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="lab">
+                <PatientLabOrders patientId={patient.id} />
+              </TabsContent>
+
+              <TabsContent value="imaging">
+                <PatientStudies patientId={patient.id} />
               </TabsContent>
 
               <TabsContent value="billing">
