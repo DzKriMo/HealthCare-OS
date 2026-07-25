@@ -66,4 +66,5 @@ urlpatterns = [
     path("fhir/", include("fhir.urls")),
     path("api/sync/", include("sync.urls")),
     path("api/telemedicine/", include("telemedicine.urls")),
+    path("api/ai/", include("ai_diagnostics.urls")),
 ]

@@ -36,6 +36,9 @@ pydantic>=2.9,<2.10
 # weasyprint>=62.0,<62.1
 # reportlab>=4.2,<4.3
 
+# AI / ML
+openai>=1.50,<1.51
+
 # Utilities
 python-dateutil>=2.9,<2.10
 pillow>=10.4,<10.5
