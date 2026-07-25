@@ -39,6 +39,9 @@ pydantic>=2.9,<2.10
 # AI / ML
 openai>=1.50,<1.51
 
+# WhatsApp & Voice
+twilio>=9.4,<9.5
+
 # Utilities
 python-dateutil>=2.9,<2.10
 pillow>=10.4,<10.5
