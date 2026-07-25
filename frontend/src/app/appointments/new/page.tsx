@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -8,18 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Icons } from "@/components/icons";
 import { api, ApiRequestError } from "@/lib/api/client";
 
 const TYPES = ["consultation", "follow_up", "procedure", "emergency", "checkup", "other"];
-
 interface Option { id: string; label: string; }
 
 function NewAppointmentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const presetPatient = searchParams.get("patient") || "";
-  const { user, isAuthenticated, isLoading, fetchCurrentUser, logout } =
-    useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading, fetchCurrentUser, logout } = useAuthStore();
 
   const [patients, setPatients] = useState<Option[]>([]);
   const [practitioners, setPractitioners] = useState<Option[]>([]);
@@ -30,77 +29,79 @@ function NewAppointmentInner() {
   const [duration, setDuration] = useState(30);
   const [type, setType] = useState("consultation");
   const [reason, setReason] = useState("");
+  const [conflictWarning, setConflictWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [correlationId, setCorrelationId] = useState<string | undefined>();
 
   useEffect(() => { fetchCurrentUser(); }, [fetchCurrentUser]);
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.push("/login");
-  }, [isLoading, isAuthenticated, router]);
+    if (!authLoading && !isAuthenticated) router.push("/login");
+  }, [authLoading, isAuthenticated, router]);
   useEffect(() => {
     if (isAuthenticated) loadOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const loadOptions = async () => {
     try {
       const p = await api.get<{ results: { id: string; full_name: string }[] }>("/patients/");
       setPatients(p.results.map((x) => ({ id: x.id, label: x.full_name })));
-    } catch { /* handled by empty state */ }
+    } catch { }
     try {
       const u = await api.get<{ results: { id: string; full_name: string; role_name: string }[] }>("/auth/users/");
-      setPractitioners(
-        u.results
-          .filter((x) => ["Doctor", "Nurse", "Admin"].includes(x.role_name))
-          .map((x) => ({ id: x.id, label: x.full_name })),
-      );
+      setPractitioners(u.results.filter((x) => ["Doctor", "Nurse", "Admin"].includes(x.role_name)).map((x) => ({ id: x.id, label: x.full_name })));
     } catch {
-      // Reception may lack user-list permission; fall back to self.
       if (user) setPractitioners([{ id: user.id, label: `${user.first_name} ${user.last_name}` }]);
     }
   };
 
+  const checkConflict = useCallback(async () => {
+    if (!practitioner || !date || !time) { setConflictWarning(""); return; }
+    const start = `${date}T${time}`;
+    const endDate = new Date(new Date(`${date}T${time}`).getTime() + duration * 60000);
+    const end = endDate.toISOString();
+    try {
+      const data = await api.get<{ appointments: { id: string; patient_name: string; start_time: string; status: string }[] }>(
+        `/appointments/calendar/?date=${date}&view=day&practitioner=${practitioner}`,
+      );
+      const conflicts = data.appointments.filter((a: { start_time: string; end_time: string; status: string }) => {
+        return a.start_time < end && endDate.toISOString() > a.start_time;
+      });
+      setConflictWarning(conflicts.length > 0
+        ? `Conflict with ${conflicts.length} existing appointment(s) for this practitioner at this time.`
+        : "");
+    } catch { setConflictWarning(""); }
+  }, [practitioner, date, time, duration]);
+
+  useEffect(() => {
+    const t = setTimeout(checkConflict, 500);
+    return () => clearTimeout(t);
+  }, [checkConflict]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setCorrelationId(undefined);
+    setError(""); setCorrelationId(undefined);
     if (!patient || !practitioner || !date || !time) {
-      setError("Patient, practitioner, date, and time are required.");
-      return;
+      setError("Patient, practitioner, date, and time are required."); return;
     }
     const start = new Date(`${date}T${time}`);
     const end = new Date(start.getTime() + duration * 60000);
-
     setSubmitting(true);
     try {
       const created = await api.post<{ id: string }>("/appointments/", {
-        patient,
-        practitioner,
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-        type,
-        reason,
+        patient, practitioner,
+        start_time: start.toISOString(), end_time: end.toISOString(),
+        type, reason,
       });
       router.push(`/appointments/${created.id}`);
     } catch (err) {
-      if (err instanceof ApiRequestError) {
-        setError(err.message);
-        setCorrelationId(err.correlationId);
-      } else {
-        setError("Failed to book appointment.");
-      }
-    } finally {
-      setSubmitting(false);
-    }
+      if (err instanceof ApiRequestError) { setError(err.message); setCorrelationId(err.correlationId); }
+      else setError("Failed to book appointment.");
+    } finally { setSubmitting(false); }
   };
 
-  if (isLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+  if (authLoading || !user) {
+    return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
   }
 
   const selectCls = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -117,6 +118,12 @@ function NewAppointmentInner() {
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {error}
             {correlationId && <span className="mt-1 block text-xs opacity-70">Ref: {correlationId}</span>}
+          </div>
+        )}
+
+        {conflictWarning && (
+          <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+            <Icons.bell className="mr-1 inline h-4 w-4" />{conflictWarning}
           </div>
         )}
 
@@ -174,9 +181,5 @@ function NewAppointmentInner() {
 }
 
 export default function NewAppointmentPage() {
-  return (
-    <Suspense fallback={null}>
-      <NewAppointmentInner />
-    </Suspense>
-  );
+  return <Suspense fallback={null}><NewAppointmentInner /></Suspense>;
 }
