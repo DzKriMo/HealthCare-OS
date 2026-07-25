@@ -25,6 +25,7 @@ import { VitalsForm } from "@/components/clinical/vitals-form";
 import { DiagnosisList } from "@/components/clinical/diagnosis-list";
 import { VaccinationList } from "@/components/clinical/vaccination-list";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
+import { PatientConsultations } from "@/components/telemedicine/patient-consultations";
 
 interface PatientFull {
   id: string; display_id: string; full_name: string;
@@ -143,6 +144,7 @@ export default function PatientDetailPage() {
                 <TabsTrigger value="lab">Lab</TabsTrigger>
                 <TabsTrigger value="imaging">Imaging</TabsTrigger>
                 <TabsTrigger value="billing">Billing</TabsTrigger>
+                <TabsTrigger value="telemedicine">Telemedicine</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
 
@@ -262,6 +264,9 @@ export default function PatientDetailPage() {
                 <PatientBillingHistory patientId={patient.id} />
               </TabsContent>
 
+              <TabsContent value="telemedicine">
+                <PatientConsultations patientId={patient.id} />
+              </TabsContent>
               <TabsContent value="timeline">
                 <PatientTimeline patientId={patient.id} />
               </TabsContent>

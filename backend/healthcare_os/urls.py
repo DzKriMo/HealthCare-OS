@@ -65,4 +65,5 @@ urlpatterns = [
     path("api/vet/", include("veterinary.urls")),
     path("fhir/", include("fhir.urls")),
     path("api/sync/", include("sync.urls")),
+    path("api/telemedicine/", include("telemedicine.urls")),
 ]
